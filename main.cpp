@@ -2,6 +2,10 @@
 #include <unistd.h> // Für getopt
 #include <vector>
 #include <string>
+#include <filesystem> // Für die Dateisuche
+#include <string.h>
+
+namespace fs = std::filesystem;
 
 int main(int argc, char* argv[]) {
     bool recursive = false; // -R Option
@@ -40,11 +44,25 @@ int main(int argc, char* argv[]) {
     std::cout << "Recursive: " << (recursive ? "Yes" : "No") << std::endl;
     std::cout << "Case-Insensitive: " << (caseInsensitive ? "Yes" : "No") << std::endl;
     std::cout << "Search Path: " << searchPath << std::endl;
-    std::cout << "Files to search: ";
-    for (const auto& file : files) {
-        std::cout << file << " ";
+
+    // Dateisuche
+    try {
+        for (const auto& entry : fs::directory_iterator(searchPath)) {
+            if (!entry.is_regular_file()) continue;
+
+            std::string filename = entry.path().filename().string();
+
+            for (const auto& target : files) {
+                if ((caseInsensitive && strcasecmp(filename.c_str(), target.c_str()) == 0) ||
+                    (!caseInsensitive && filename == target)) {
+                    std::cout << "Found: " << filename << " at " << entry.path() << std::endl;
+                }
+            }
+        }
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "Error accessing " << searchPath << ": " << e.what() << std::endl;
+        return 1;
     }
-    std::cout << std::endl;
 
     return 0;
 }
