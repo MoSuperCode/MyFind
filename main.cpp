@@ -47,6 +47,20 @@ int main(int argc, char* argv[]) {
 
     // Dateisuche
     try {
+    if (recursive) {
+        for (const auto& entry : fs::recursive_directory_iterator(searchPath)) {
+            if (!entry.is_regular_file()) continue;
+
+            std::string filename = entry.path().filename().string();
+
+            for (const auto& target : files) {
+                if ((caseInsensitive && strcasecmp(filename.c_str(), target.c_str()) == 0) ||
+                    (!caseInsensitive && filename == target)) {
+                    std::cout << "Found: " << filename << " at " << entry.path() << std::endl;
+                }
+            }
+        }
+    } else {
         for (const auto& entry : fs::directory_iterator(searchPath)) {
             if (!entry.is_regular_file()) continue;
 
@@ -59,10 +73,12 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
-    } catch (const fs::filesystem_error& e) {
-        std::cerr << "Error accessing " << searchPath << ": " << e.what() << std::endl;
-        return 1;
     }
+} catch (const fs::filesystem_error& e) {
+    std::cerr << "Error accessing " << searchPath << ": " << e.what() << std::endl;
+    return 1;
+}
+
 
     return 0;
 }
